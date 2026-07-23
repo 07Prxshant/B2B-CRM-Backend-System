@@ -1,7 +1,10 @@
 import { Router } from "express"
-import { requestHandler } from "../controllers/user.controller.js"
+import { registerAdmin } from "../controllers/user.controller.js"
+import { upload } from "../middlewares/multer.middleware.js";
 
-const userRouter = Router()
-userRouter.route('/register').post(requestHandler)
+const authRouter = Router()
+authRouter.route('/register').post(
+    upload.none(),
+    registerAdmin)
 
-export {userRouter}
+export {authRouter}
