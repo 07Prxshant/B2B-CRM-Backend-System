@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import Organization from "../models/organization.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js"
+import { isErrorBarRelevantForAxisType } from "recharts/types/state/selectors/axisSelectors.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -171,12 +172,38 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
 })
 
 const getCurrentUser = asyncHandler(async(req,res)=>{
-    
+    return res.status(200)
+    .json(new ApiResponse(200,req.user,'Current user fetched successfully'))
+})
+
+const updatePassword = asyncHandler(async(req,res)=>{
+    const {currentPassword, newPassword} = req.body
+    if(!currentPassword || !newPassword){
+        throw new ApiError (401,'All fields are mandatory to be filled')
+    }
+
+    const user = await User.findById(req.user._id)
+    if(!user){
+        throw new ApiError(404,'User not found')
+    }
+
+    const currentPasswordValid = await user.isPasswordCorrect(currentPassword)
+    if(!currentPasswordValid){
+        throw new ApiError(401,'Invalid current password')
+    }
+
+    user.password = newPassword
+    await user.save()
+
+    return res.status(200)
+    .json(new ApiResponse(200,{},'Password updated successfully'))
 })
 
 export { 
     registerAdmin,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    getCurrentUser,
+    updatePassword
 }
