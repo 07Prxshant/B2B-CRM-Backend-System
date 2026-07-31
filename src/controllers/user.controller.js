@@ -45,6 +45,26 @@ return res.status(200)
 .json(new ApiResponse(200, users, 'All the users fetched successfully'))
 })
 
+const getUser = asyncHandler(async(req, res)=>{
+    const id = req.params.id
+
+    const user = await User.findOne({
+        _id:id,
+        organizationId: req.user.organizationId
+    }).select('-password -refreshToken')
+
+    if(!user){
+        throw new ApiError(404,'User not found')
+    }
+
+    return res.status(200)
+    .json(new ApiResponse (200, user, 'User fetched successfully'))
+})
+
+const updateUserbyAdmin = asyncHandler(async(req,res)=>{
+
+})
+
 
 export {
     createUser,
