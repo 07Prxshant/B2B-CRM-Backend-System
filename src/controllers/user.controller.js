@@ -62,12 +62,44 @@ const getUser = asyncHandler(async(req, res)=>{
 })
 
 const updateUserbyAdmin = asyncHandler(async(req,res)=>{
+    const id = req.params.id
+    const {role, isActive} = req.body
 
+    if (!role || typeof isActive !== "boolean") {
+        throw new ApiError(400,'Invalid request')
+    }
+
+    if (!["ADMIN", "USER"].includes(role)) {
+        throw new ApiError(400, "Invalid role");
+    }
+
+    const user = await User.findOne({
+        _id:id,
+        organizationId:req.user.organizationId
+    })
+    if(!user){
+        throw new ApiError(404,'User not found')
+    }
+
+    if (user._id.toString() === req.user._id.toString()){
+        throw new ApiError(400, 'You cannot modify your own role or active status')
+    }
+
+    user.role = role
+    user.isActive = isActive
+    await user.save()
+
+    const updatedUser = await User.findById(user._id).select('-password -refreshToken')
+
+    return res.status(200)
+    .json(new ApiResponse(200,updatedUser,'User updated successfully'))
 })
 
 
 export {
     createUser,
     getAllUsers,
+    getUser,
+    updateUserbyAdmin
 
 }
