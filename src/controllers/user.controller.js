@@ -12,8 +12,8 @@ const createUser = asyncHandler(async(req,res)=>{
         throw new ApiError(400,'All fields are mandatory')
     }
 
-    const exisitingUser = await User.findOne({email})
-    if (exisitingUser){
+    const existingUser = await User.findOne({email})
+    if (existingUser){
         throw new ApiError(409,'User with this email already exist')
     }
 
@@ -38,11 +38,12 @@ const createUser = asyncHandler(async(req,res)=>{
 
 const getAllUsers = asyncHandler(async(req, res)=>{
     const users = await User.find({
-        organizationId: req.user.organizationId
+        organizationId: req.user.organizationId,
+        isActive: true
     }).select('-password -refreshToken')
 
 return res.status(200)
-.json(new ApiResponse(200, users, 'All the users fetched successfully'))
+.json(new ApiResponse(200, users, 'Users fetched successfully'))
 })
 
 const getUser = asyncHandler(async(req, res)=>{
@@ -65,11 +66,11 @@ const updateUserbyAdmin = asyncHandler(async(req,res)=>{
     const id = req.params.id
     const {role, isActive} = req.body
 
-    if (!role || typeof isActive !== "boolean") {
+    if (!role && typeof isActive !== "boolean") {
         throw new ApiError(400,'Invalid request')
     }
 
-    if (!["ADMIN", "USER"].includes(role)) {
+    if (role && !["ADMIN", "USER"].includes(role)) {
         throw new ApiError(400, "Invalid role");
     }
 
@@ -85,8 +86,13 @@ const updateUserbyAdmin = asyncHandler(async(req,res)=>{
         throw new ApiError(400, 'You cannot modify your own role or active status')
     }
 
-    user.role = role
-    user.isActive = isActive
+    if (role){
+        user.role = role
+    }
+    
+    if (typeof isActive === "boolean"){
+        user.isActive = isActive
+    }
     await user.save()
 
     const updatedUser = await User.findById(user._id).select('-password -refreshToken')
@@ -95,11 +101,38 @@ const updateUserbyAdmin = asyncHandler(async(req,res)=>{
     .json(new ApiResponse(200,updatedUser,'User updated successfully'))
 })
 
+const selfUserUpdate = asyncHandler(async(req,res)=>{
+    const {firstName, lastName} = req.body
+    if (!firstName && !lastName){
+        throw new ApiError(400,'Invalid request')
+    }
+
+    const user = await User.findById(req.user._id)
+    if (!user){
+        throw new ApiError(404,'User not found')
+    }
+
+    if (firstName){
+        user.firstName = firstName
+    }
+
+    if (lastName){
+        user.lastName = lastName
+    }
+
+    await user.save()
+
+    const updatedUser = await User.findById(user._id).select('-password -refreshToken')
+
+    return res.status(200)
+    .json(new ApiResponse(200,updatedUser,'Profile updated successfully'))
+})
+
 
 export {
     createUser,
     getAllUsers,
     getUser,
-    updateUserbyAdmin
-
+    updateUserbyAdmin,
+    selfUserUpdate
 }
