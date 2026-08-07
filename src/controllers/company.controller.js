@@ -55,7 +55,53 @@ const getCompany = asyncHandler(async(req, res)=>{
     .json(new ApiResponse(200, company, 'Company fetched successfully'))
 })
 
+const updateCompany = asyncHandler(async(req, res)=>{
+    const {id} = req.params
+    const {name, email, industry} = req.body
+    const companyName = name?.trim()
+    if (!companyName && !email && !industry){
+        throw new ApiError(400, 'At least one field is required')
+    }
 
+    const company = await Company.findOne({
+        _id:id,
+        organizationId:req.user.organizationId
+    })
+    if (!company){
+        throw new ApiError(404,'Company not found')
+    }
+
+    if (companyName) {
+        const existingCompany = await Company.findOne({
+            name: companyName,
+            organizationId: req.user.organizationId
+        });
+
+        if (existingCompany && existingCompany._id.toString() !== company._id.toString()) {
+            throw new ApiError(409, "Company already exists");
+        }
+
+        company.name = companyName;
+    }
+
+    if(email){
+        company.email = email
+    }
+
+    if(industry){
+        company.industry = industry
+    }
+
+    await company.save()
+
+    const updatedCompany = await Company.findOne({
+        _id: id,
+        organizationId: req.user.organizationId
+    })
+
+    return res.status(200)
+    .json(new ApiResponse(200, updatedCompany, 'Company details updated successfully'))
+})
 
 export {
     createCompany,
