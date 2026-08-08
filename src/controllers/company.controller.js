@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import User from "../models/user.model.js";
 import Company from "../models/company.model.js"
 
+
 const createCompany = asyncHandler(async(req, res)=>{
     const {name, email, industry} = req.body
     const companyName = name?.trim()
@@ -30,7 +31,7 @@ const createCompany = asyncHandler(async(req, res)=>{
     .json(new ApiResponse(201, company, 'Company created successfully'))
 })
 
-const getAllCompany = asyncHandler(async(req, res)=>{
+const getAllCompanies = asyncHandler(async(req, res)=>{
     const companies = await Company.find({
         organizationId: req.user.organizationId,
         isActive: true
@@ -46,6 +47,7 @@ const getCompany = asyncHandler(async(req, res)=>{
     const company = await Company.findOne({
         _id: id,
         organizationId: req.user.organizationId,
+        isActive:true
     })
     if (!company){
         throw new ApiError(404, 'Company not found')
@@ -57,9 +59,9 @@ const getCompany = asyncHandler(async(req, res)=>{
 
 const updateCompany = asyncHandler(async(req, res)=>{
     const {id} = req.params
-    const {name, email, industry} = req.body
+    const {name, email, industry, isActive} = req.body
     const companyName = name?.trim()
-    if (!companyName && !email && !industry){
+    if (!companyName && !email && !industry && typeof isActive !== 'boolean'){
         throw new ApiError(400, 'At least one field is required')
     }
 
@@ -84,12 +86,24 @@ const updateCompany = asyncHandler(async(req, res)=>{
         company.name = companyName;
     }
 
+    if (email !== undefined && !email.trim()) {
+        throw new ApiError(400, "Email cannot be empty");
+    }
+
+    if (industry !== undefined && !industry.trim()) {
+        throw new ApiError(400, "Industry cannot be empty");
+    }
+
     if(email){
         company.email = email
     }
 
     if(industry){
         company.industry = industry
+    }
+
+    if(typeof isActive === 'boolean'){
+        company.isActive = isActive
     }
 
     await company.save()
@@ -103,7 +117,27 @@ const updateCompany = asyncHandler(async(req, res)=>{
     .json(new ApiResponse(200, updatedCompany, 'Company details updated successfully'))
 })
 
+const deleteCompany = asyncHandler(async(req, res)=>{
+    const {id} = req.params
+    const company = await Company.findOne({
+        _id:id,
+        organizationId: req.user.organizationId
+    })
+    if (!company){
+        throw new ApiError(404,'Company not found')
+    }
+
+    company.isActive = false
+    await company.save()
+
+    return res.status(200)
+    .json(new ApiResponse(200,{},'Company deleted successfully'))
+})
+
 export {
     createCompany,
-
+    getAllCompanies,
+    getCompany,
+    updateCompany,
+    deleteCompany
 }

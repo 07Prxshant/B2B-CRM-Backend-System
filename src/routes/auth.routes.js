@@ -3,19 +3,19 @@ import { loginUser, logoutUser, registerAdmin, refreshAccessToken, getCurrentUse
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
-const router = Router()
+const authRouter = Router()
 
-router.route('/register').post(upload.none(),registerAdmin)
+authRouter.route('/register').post(upload.none(),registerAdmin)
 
-router.route('/login').post(loginUser)
+authRouter.route('/login').post(loginUser)
 
-router.route('/logout').post(verifyJWT, logoutUser)
+authRouter.route('/logout').post(verifyJWT, logoutUser)
 
-router.route('/refresh-token').post(refreshAccessToken)
+authRouter.route('/refresh-token').post(refreshAccessToken)
 
-router.route('/me').get(verifyJWT, getCurrentUser)
+authRouter.route('/me').get(verifyJWT, getCurrentUser)
 
-router.route('/update-password').patch(verifyJWT, updatePassword)
+authRouter.route('/update-password').patch(verifyJWT, updatePassword)
 
 
-export default router
+export default authRouter
