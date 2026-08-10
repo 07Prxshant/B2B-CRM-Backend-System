@@ -53,6 +53,10 @@ const leadSchema = new mongoose.Schema({
         ],
         default: "NEW"
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 },{
     timestamps:true
 })

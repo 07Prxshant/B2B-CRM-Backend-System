@@ -5,6 +5,9 @@ import Lead from "../models/lead.model.js"
 import Company from "../models/company.model.js"
 import User from "../models/user.model.js"
 import History from "../models/history.model.js"
+import { tr } from "framer-motion/client";
+import { startSession } from "mongoose";
+import { statsBuffer } from "framer-motion";
 
 const createLead = asyncHandler(async (req, res)=>{
     const createdBy = req.user._id
@@ -49,7 +52,7 @@ const createLead = asyncHandler(async (req, res)=>{
         phone,
     })
 
-    const history = await History.create({
+    await History.create({
         organizationId,
         leadId : lead._id,
         performedBy: createdBy,
@@ -59,6 +62,74 @@ const createLead = asyncHandler(async (req, res)=>{
 
     return res.status(201)
     .json(new ApiResponse(201,lead,'Lead created successfully'))
+})
+
+const getAllLeads = asyncHandler(async(req, res)=>{
+    const leads = await Lead.find({
+        organizationId: req.user.organizationId,
+        isActive: true
+    })
+    return res.status(200)
+    .json(new ApiResponse(200, leads, 'All leads fetched successfully'))
+})
+
+const getLead = asyncHandler(async(req ,res)=>{
+    const {id} = req.params
+    const lead = await Lead.findOne({
+        _id:id,
+        organizationId: req.user.organizationId,
+        isActive:true
+    })
+    if (!lead) {
+        throw new ApiError(404,'Lead not found')
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(200, lead,'Lead fetched successfully'))
+})
+
+const updateLead = asyncHandler(async(req,res)=>{
+    const {id} = req.params
+    const {status} = req.body
+    const validStatus = [
+            'NEW',
+            'CONTACTED',
+            'DEMO_SCHEDULED',
+            'NEGOTIATION',
+            'WON',
+            'LOST',
+        ]
+    if (!validStatus.includes(status)){
+        throw new ApiError(400,'Invalid status')
+    }
+
+    const lead = await Lead.findOne({
+        _id:id,
+        organizationId:req.user.organizationId,
+        isActive:true
+    })
+
+    if (!lead){
+        throw new ApiError(404,'Lead not found')
+    }
+
+    const oldStatus = lead.status
+    if (oldStatus === status){
+        throw new ApiError(400,'Lead already have this status')
+    }
+    lead.status = status
+    await lead.save()
+    
+    await History.create({
+        organizationId: req.user.organizationId,
+        leadId : lead._id,
+        performedBy: req.user._id,
+        eventType: 'STATUS_CHANGED',
+        description: `Lead status changed from ${oldStatus} to ${status}`
+    })
+
+    return res.status(200)
+    .json(new ApiResponse(200, lead, 'Lead status updated successfully'))
 })
 
 export {}
