@@ -27,7 +27,7 @@ const historySchema = new mongoose.Schema({
             "NOTE_ADDED",
             "LEAD_UPDATED"
         ],
-        required: true
+        default: "LEAD_CREATED"
     },
 
     description: {
