@@ -132,4 +132,56 @@ const updateLead = asyncHandler(async(req,res)=>{
     .json(new ApiResponse(200, lead, 'Lead status updated successfully'))
 })
 
+const assignLead = asyncHandler(async(req, res)=>{
+    const {id} = req.params
+    const {assignedTo} = req.body
+
+    if (!assignedTo){
+        throw new ApiError(400,'Assigned user is required')
+    }
+
+    const lead = await Lead.findOne({
+        _id:id,
+        organizationId: req.user.organizationId,
+        isActive:true
+    })
+    if (!lead) {
+        throw new ApiError(404,'Lead not found')
+    }
+
+    if (lead.assignedTo.toString() === assignedTo) {
+        throw new ApiError(400, 'Lead is already assigned to this user')
+    }
+
+    const user = await User.findOne({
+        _id:assignedTo,
+        organizationId: req.user.organizationId
+    })
+
+    if (!user){
+        throw new ApiError(404,'Assinged user not found');
+    }
+
+    if (user.isActive !== true){
+        throw new ApiError(400,'Assinged user is inactive');
+    }
+
+    const oldAssignedTo = lead.assignedTo
+
+    lead.assignedTo = assignedTo
+    await lead.save()
+
+    await History.create({
+        organizationId:req.user.organizationId,
+        leadId : lead._id,
+        performedBy: req.user._id,
+        eventType: 'LEAD_ASSIGNED',
+        description: `Lead reassigned from ${oldAssignedTo} to ${assignedTo}`
+    })
+
+    return res.status(200)
+    .json(new ApiResponse(200,lead,'New user lead successfully assigned'))
+
+})
+
 export {}
