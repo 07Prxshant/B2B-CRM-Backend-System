@@ -65,7 +65,18 @@ const getAllFollowUps = asyncHandler(async(req, res)=>{
 })
 
 const getFollowUp = asyncHandler(async(req, res)=>{
+    const { id } = req.params
+    const followUp = await FollowUp.findOne({
+        _id:id,
+        organizationId:req.user.organizationId
+    })
 
+    if (!followUp) {
+        throw new ApiError(404, 'Follow-up not found')
+    }
+
+    return res.status(200)
+    .json(new ApiResponse(200,followUp,'Follow-up fetched successfully'))
 })
 
 const updateFollowUp = asyncHandler(async(req, res)=>{
