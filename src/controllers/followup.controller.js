@@ -55,8 +55,13 @@ const createFollowUp = asyncHandler(async(req, res)=>{
 
 })
 
-const getAllFollowUp = asyncHandler(async(req, res)=>{
-
+const getAllFollowUps = asyncHandler(async(req, res)=>{
+    const followUps = await FollowUp.find({
+        organizationId:req.user.organizationId,
+    })
+    
+    return res.status(200)
+    .json(new ApiResponse(200,followUps,'All follow-ups fetched successfully'))
 })
 
 const getFollowUp = asyncHandler(async(req, res)=>{
@@ -69,5 +74,5 @@ const updateFollowUp = asyncHandler(async(req, res)=>{
 
 export {
     createFollowUp,
-    
+
 }
