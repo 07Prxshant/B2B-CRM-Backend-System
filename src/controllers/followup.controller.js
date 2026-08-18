@@ -80,7 +80,86 @@ const getFollowUp = asyncHandler(async(req, res)=>{
 })
 
 const updateFollowUp = asyncHandler(async(req, res)=>{
+    const { id } = req.params
+    const { followUpDate, assignedTo, note, status} = req.body;
+    if ( followUpDate === undefined && assignedTo === undefined && note === undefined && status === undefined){
+        throw new ApiError(400,"Atleast one fields is required")
+    }
 
+    const followUp = await FollowUp.findOne({
+        _id:id,
+        organizationId:req.user.organizationId
+    })
+
+    if (!followUp){
+        throw new ApiError(404,"follow-up not found")
+    }
+
+    const oldFollowUpDate = followUp.followUpDate 
+    if (followUpDate !== undefined) {
+        if (oldFollowUpDate.toString() === followUpDate.toString()) {
+            throw new ApiError(400, "Follow-up already has this date")
+        }
+        followUp.followUpDate = followUpDate
+    }
+
+    if (assignedTo !== undefined) {
+        const user = await User.findOne({
+            _id: assignedTo,
+            organizationId: req.user.organizationId,
+            isActive: true
+        })
+
+        if (!user) {
+            throw new ApiError(404, "Assigned user not found")
+        }
+
+        if (followUp.assignedTo.toString() === assignedTo) {
+            throw new ApiError(400, "Follow-up is already assigned to this user")
+        }
+
+        followUp.assignedTo = assignedTo
+    }
+
+    if (note !== undefined) {
+        if (!note.trim()) {
+            throw new ApiError(400, "Note cannot be empty")
+        }
+
+        followUp.note = note.trim()
+    }
+
+    const oldStatus = followUp.status
+    if (status !== undefined) {
+        const validStatus = [
+            'PENDING',
+            'COMPLETED',
+            'CANCELLED'
+        ]
+
+        if (!validStatus.includes(status)) {
+            throw new ApiError(400, "Invalid follow-up status")
+        }
+
+        if (oldStatus === status) {
+            throw new ApiError(400, "Follow-up already has this status")
+        }
+
+        followUp.status = status
+    }
+
+    await followUp.save()
+
+    await History.create({
+        organizationId:req.user.organizationId,
+        leadId : followUp.leadId,
+        performedBy: req.user._id,
+        eventType: 'FOLLOWUP_UPDATED',
+        description: `Follow-Up updated by ${req.user._id}`
+    })
+
+    return res.status(200)
+    .json(new ApiResponse(200,followUp,"Follow-up updated successfully"))
 })
 
 export {
