@@ -184,4 +184,37 @@ const assignLead = asyncHandler(async(req, res)=>{
 
 })
 
-export {}
+const deleteLead = asyncHandler(async(req, res)=>{
+    const {id} = req.params
+    const lead = await Lead.findOne({
+        _id:id,
+        organizationId: req.user.organizationId,
+        isActive:true
+    })
+    if (!lead) {
+        throw new ApiError(404,'Lead not found')
+    }
+
+    lead.isActive = false
+    await lead.save()
+
+    await History.create({
+        organizationId: req.user.organizationId,
+        leadId : lead._id,
+        performedBy: req.user._id,
+        eventType: 'LEAD_DELETED',
+        description: `Lead deleted successfully`
+    })
+
+    return res.status(200)
+    .json(new ApiResponse(200,lead,'Lead deleted successfully'))
+})
+
+export {
+    createLead,
+    getAllLeads,
+    getLead,
+    updateLead,
+    assignLead,
+    deleteLead
+}

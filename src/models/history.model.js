@@ -20,12 +20,13 @@ const historySchema = new mongoose.Schema({
         type: String,
         enum: [
             "LEAD_CREATED",
-            "STATUS_CHANGED",
+             "LEAD_UPDATED",
             "LEAD_ASSIGNED",
+            "LEAD_DELETED",
+            "STATUS_CHANGED",
             "FOLLOWUP_CREATED",
             "FOLLOWUP_UPDATED",
             "NOTE_ADDED",
-            "LEAD_UPDATED"
         ],
         default: "LEAD_CREATED"
     },
