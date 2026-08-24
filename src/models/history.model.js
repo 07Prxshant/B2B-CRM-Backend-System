@@ -26,7 +26,8 @@ const historySchema = new mongoose.Schema({
             "STATUS_CHANGED",
             "FOLLOWUP_CREATED",
             "FOLLOWUP_UPDATED",
-            "NOTE_ADDED",
+            "NOTE_CREATED",
+            "NOTE_UPDATED",
         ],
         default: "LEAD_CREATED"
     },
