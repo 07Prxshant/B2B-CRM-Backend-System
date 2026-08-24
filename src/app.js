@@ -19,9 +19,14 @@ app.use(cookieParser())
 import authRouter from './routes/auth.routes.js'
 import userRouter from './routes/user.routes.js'
 import companyRouter from './routes/company.routes.js'
+import leadRouter from './routes/lead.routes.js'
+import historyRouter from './routes/history.routes.js'
+
 //declaration
 app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/companies', companyRouter)
+app.use('/api/v1/leads', companyRouter)
+app.use('/api/v1/leads', historyRouter)
 
 export {app}
