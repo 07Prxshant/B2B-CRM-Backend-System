@@ -8,6 +8,7 @@ import History from "../models/history.model.js"
 import { tr } from "framer-motion/client";
 import { startSession } from "mongoose";
 import { statsBuffer } from "framer-motion";
+import { selectAnyCartesianItemsUsesChartData } from "recharts/types/state/selectors/axisSelectors.js";
 
 const createLead = asyncHandler(async (req, res)=>{
     const createdBy = req.user._id
@@ -65,12 +66,121 @@ const createLead = asyncHandler(async (req, res)=>{
 })
 
 const getAllLeads = asyncHandler(async(req, res)=>{
-    const leads = await Lead.find({
-        organizationId: req.user.organizationId,
-        isActive: true
-    })
+    const {
+        search,
+        companyId,
+        assignedTo,
+        createdBy,
+        status,
+        isActive,
+        createdFrom,
+        createdTo,
+        sortBy,
+        sortOrder,
+        page,
+        limit
+    } = req.query
+
+    const query = {
+        organizationId:req.user.organizationId
+    }
+
+    if (search) {
+        query.$or = [
+            {
+                firstName: {
+                    $regex:search,
+                    $options:"i"
+                }
+            },
+
+            {    lastName: {
+                    $regex:search,
+                    $options:"i"
+                }
+            },
+            {    email: {
+                    $regex:search,
+                    $options:"i"
+                }
+            },
+            {    phone: {
+                    $regex:search,
+                    $options:"i"
+                }
+            }
+        ]
+    }
+
+    if (companyId){
+        query.companyId = companyId
+    }
+    if (assignedTo){
+        query.assignedTo = assignedTo
+    }
+    if (createdBy){
+        query.createdBy = createdBy
+    }
+    if (status){
+        query.status = status
+    }
+    if (isActive !== undefined){
+        query.isActive = isActive === 'true'
+    }
+    if (createdFrom || createdTo){
+        query.createdAt = {}
+
+        if (createdFrom) {
+            query.createdAt.$gte = new Date(createdFrom)
+        }
+        if (createdTo) {
+            query.createdAt.$lte = new Date(createdTo)
+        }
+    }
+
+    const allowedSortFields = [
+        "firstName",
+        "lastName",
+        "createdAt",
+        "updatedAt",
+        "status"
+    ]
+    const sort = {}
+
+    if (sortBy && allowedSortFields.includes(sortBy)){
+        sort[sortBy] = sortOrder === "asc" ? 1 : -1
+    }
+    else {
+        sort.createdAt = -1;
+    }
+
+    const pageNumber = Number(page) || 1
+    const limitNumber = Number(limit) || 10
+    const skip = (pageNumber - 1)* limitNumber
+    const totalLeads = await Lead.countDocuments(query);
+    const totalPages = Math.ceil(totalLeads / limitNumber);
+
+    const leads = await Lead.find(query)
+    .populate("companyId","name")
+    .populate("assignedTo","firstName lastName email")
+    .populate("createdBy","firstName lastName email")
+    .sort(sort)
+    .skip(skip)
+    .limit(limitNumber)
+
     return res.status(200)
-    .json(new ApiResponse(200, leads, 'All leads fetched successfully'))
+    .json(new ApiResponse(
+        200, 
+        {
+            leads,
+            pagination: {
+                page: pageNumber,
+                limit: limitNumber,
+                totalLeads,
+                totalPages
+            }
+        }, 
+        'All leads fetched successfully'))
 })
 
 const getLead = asyncHandler(async(req ,res)=>{
