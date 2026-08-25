@@ -5,6 +5,7 @@ import Lead from "../models/lead.model.js";
 import User from "../models/user.model.js";
 import FollowUp from "../models/followup.model.js";
 import History from "../models/history.model.js";
+import organizationModel from "../models/organization.model.js";
 
 const createFollowUp = asyncHandler(async(req, res)=>{
     const { leadId, assignedTo, followUpDate, note } = req.body;
@@ -56,9 +57,60 @@ const createFollowUp = asyncHandler(async(req, res)=>{
 })
 
 const getAllFollowUps = asyncHandler(async(req, res)=>{
-    const followUps = await FollowUp.find({
-        organizationId:req.user.organizationId,
-    })
+    const {
+        leadId,
+        assignedTo,
+        status,
+        followUpFrom,
+        followUpTo,
+        sortBy,
+        sortOrder,
+    } = req.query
+
+    const query = {
+        organizationId:req.user.organizationId
+    }
+    if (req.user.role == "USER"){
+        query.assignedTo = req.user._id
+    }
+    if (req.user.role == "ADMIN" && assignedTo){
+        query.assignedTo = assignedTo
+    }
+
+    if (leadId) {
+        query.leadId = leadId
+    }
+    if (status) {
+        query.status = status
+    }
+    if (followUpFrom || followUpTo){
+        query.followUpDate = {}
+
+        if (followUpFrom) {
+            query.followUpDate.$gte = new Date(followUpFrom)
+        }
+        if (followUpTo) {
+            query.followUpDate.$lte = new Date(followUpTo)
+        }
+    }
+
+    const sort = {}
+    const allowedSortFields = [
+        "status",
+        "followUpDate"
+    ]
+
+    if (sortBy && allowedSortFields.includes(sortBy)){
+        sort[sortBy] = sortOrder === "asc" ? 1:-1
+    }
+    else {
+        sort.followUpDate = 1;
+    }
+
+    const followUps = await FollowUp.find(query)
+    .populate("leadId","firstName lastName email")
+    .populate("assignedTo", "firstName lastName email")
+    .sort(sort)
     
     return res.status(200)
     .json(new ApiResponse(200,followUps,'All follow-ups fetched successfully'))
