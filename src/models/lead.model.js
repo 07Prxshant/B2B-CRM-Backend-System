@@ -46,10 +46,8 @@ const leadSchema = new mongoose.Schema({
         enum:[
             'NEW',
             'CONTACTED',
-            'DEMO_SCHEDULED',
-            'NEGOTIATION',
-            'WON',
-            'LOST',
+            'QUALIFIED',
+            'UNQUALIFIED'
         ],
         default: "NEW"
     },
