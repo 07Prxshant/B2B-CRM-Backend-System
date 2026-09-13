@@ -1,6 +1,9 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiError } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import Deal from "../models/deal.model.js"
+import FollowUp from "../models/followup.model.js"
+import Lead from "../models/lead.model.js"
 
 const getDashboard = asyncHandler(async(req,res) => {
     const leadStat = await Lead.aggregate([
@@ -158,5 +161,5 @@ const getDashboard = asyncHandler(async(req,res) => {
 })
 
 export {
-
+    getDashboard
 }
